@@ -46,3 +46,8 @@ static void remove_double_dots(char* s) {
 	}
 	*p = '\0';
 }
+
+void uri_parse(char* src, int len) {
+	uri_decode(src,len - 1, src, len);
+	remove_double_dots(src);
+}

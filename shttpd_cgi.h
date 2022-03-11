@@ -1,12 +1,12 @@
 /*************************************************************************
-	> File Name: shttpd_uri.h
+	> File Name: shttpd_cgi.h
 	> Author: yuxintao
 	> Mail: 1921056015@qq.com 
-	> Created Time: 2022年03月11日 星期五 10时09分08秒
+	> Created Time: 2022年03月11日 星期五 21时06分57秒
  ************************************************************************/
 
-#ifndef SHTTPD_URI_H
-#define SHTTPD_URI_H
+#ifndef SHTTPD_CGI_H
+#define SHTTPD_CGI_H
 
-void uri_parse(char* src, int len);
+
 #endif

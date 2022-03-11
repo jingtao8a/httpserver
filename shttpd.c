@@ -6,9 +6,11 @@
  ************************************************************************/
 
 #include <stdio.h>
+#include <signal.h>
 #include "datatype.h"
 #include "cmdparse.h"
 #include "fileparse.h"
+#include "shttpd_worker.h"
 
 struct conf_opts conf_para = {
 	"/usr/local/var/www/cgi-bin",	//CGIRoot
@@ -22,9 +24,43 @@ struct conf_opts conf_para = {
 };
 
 
+static void sig_int(int num) {
+	Worker_ScheduleStop();
+	return;
+}
+
+
+static int do_listen(){
+	struct sockaddr_in server;
+	int err = -1;
+	int ret =-1;
+	memeset(&server, 0, sizeof(server));
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = htonl(INADDR_ANY);
+	server.sin_port = htons(conf_para.ListenPort);
+
+	int ss = socket(AF_INET, SOCK_STREAM, 0);
+	if (ss == -1) {
+		perror("socket()");
+		exit(1);
+	}
+	int reuse = 1;
+	err = setsocket(ss, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+	if (err == -1) {
+		perror("setsocket SO_REUSEADDR");
+		exit(1);
+	}
+	bind(ss, (struct sockaddr*)&server, sizeof(struct sockaddr));
+	listen(ss, conf_para.MaxClient * 2);
+
+	return ss;
+}
 
 int main(int argc, char** argv){
+	signal(SIGINT, sig_int)
 	Para_CmdParse(argc, argv);
 	Para_FileParse(conf_para.ConfigFile);
+	int s = do_listen();
+	Worker_ScheduleRun(s);
 	return 0;
 }

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "datatype.h"
+#include "shttpd_request.h"
 extern struct config_opts config_para;
 
 static void do_work(struct worker_ctl* wctl);
@@ -20,15 +21,15 @@ int Worker_ScheduleRun(int ss);
 int Worker_ScheduleStop();
 
 
-static int workersnum = 0;
+static int workersnum = 0;//work thread num
 pthread_mutex_t thread_init = PTHREAD_MUTEX_INITIALIZER;
 static struct worker_ctl* wctls = NULL;
 
 static void do_work(struct worker_ctl* wctl) {
 	struct timeval tv;
 	fd_set rfds;
-	int fd = wctl->conn.cs;
-	struct vec* req = wctl->con_req.req;
+	int fd = wctl->conn.cs;//sockfd
+	struct vec* req = wctl->conn.con_req.req;
 
 	int retval = 1;
 	
@@ -67,8 +68,8 @@ static void* worker(void *arg) {
 	struct worker_ctl* ctl = (struct worker_ctl*)arg;
 	struct worker_opts* self_opts = &ctl->opts;
 
-	pthread_mutex_unlock(&thread_init);
-	self_opts->flags = WORKER_IDEL;
+	pthread_mutex_unlock(&thread_init);//?????????????
+	self_opts->flags = WORKER_IDEL;//free
 
 	while(self_opts->flags != WORKER_DETACHING) {
 		int err = pthread_mutex_trylock(&self_opts->mutex);
@@ -76,7 +77,7 @@ static void* worker(void *arg) {
 			sleep(1);
 			continue;
 		} else {
-			self_opts->flags = WORKER_RUNNING;
+			self_opts->flags = WORKER_RUNNING;//running
 			do_work(ctl);
 			close(ctl->conn.cs);
 			ctl->conn.cs = -1;
@@ -106,10 +107,10 @@ static void Worker_Init() {
 	memset(wctls, 0, sizeof(struct worker_ctl) * conf_para.MaxClient);
 	for (i = 0; i < confif_para.MaxClient; ++i) {
 		wctls[i].opts.work = &wctls[i];
-		wctls[i].opts.work = &wctls[i];
-		wctls[i].opts.flags = WORKER_DETACHED;
+		wctls[i].conn.work = &wctls[i];
+		wctls[i].opts.flags = WORKER_DETACHED;//unloaded
 		pthread_mutex_init(&wctls[i].opts.mutex, NULL);
-		pthread_mutex_lock(&wctls[i].opts.mutex);
+		pthread_mutex_lock(&wctls[i].opts.mutex);//lock
 	
 		wctls[i].conn.con_req.conn = &wctls[i].conn;
 		wctls[i].conn.con_res.conn = &wctls[i].conn;
@@ -132,36 +133,14 @@ int Worker_Add(int i) {
 	if (wctls[i].opts.flags == WORKER_RUNNING) {
 		return 1;
 	}
-	pthread_mutex_lock(&thread_init);
-	wctls[i].opts.flags = WORKER_INITED;
+	pthread_mutex_lock(&thread_init);//thread_init lock
+	wctls[i].opts.flags = WORKER_INITED;//initialize
 	pthread_create(&th, NULL, worker, (void*)&wctls[i]);
-	pthread_mutex_unlock(&thread_init);
+	pthread_mutex_unlock(&thread_init);//thread_init unlock
 	
 	wctls[i].opts.th = th;
 	workersnum++;
 	return 0;
-}
-void Worker_Delete(int i) {
-	wctls[i].opts.flag = WORKER_DETACHING;
-}
-
-
-void Worker_Destroy() {
-	int i = 0, clean = 0;
-	for (i = 0; i < conf_para.MaxClient; ++i) {
-		if (wctls[i].opts.flags != WORKER_DETACHED) {
-			Worker_Delete(i);
-		}
-	}
-	while (!clean) {
-		clean = 1;
-		for (i = 0; i < conf_para.MaxClient; ++i) {
-			if (wctls[i].opts.flag = WORKER_RUNNING || wctls[i].opts.flag == //??????????)
-				clean = 0;
-		}
-		if (!clean)
-			sleep(1);
-	}
 }
 
 int Worker_ScheduleRun(int ss) {
@@ -188,13 +167,13 @@ int Worker_ScheduleRun(int ss) {
 			default:
 				if (FD_ISSET(ss, &rfds)) {
 					int s_c = accept(ss, &client, &len);
-					i = WORKER_ISSTATUS(WORKER_IDEL);
+					i = WORKER_ISSTATUS(WORKER_IDEL);//thread that is free
 					if (i == -1) {
 						i = WORKER_ISSTATUS(WORKER_DETACHED);
 						if (i != -1)	
 							Worker_Add(i);
 					} else {
-						wctls[i].conn.cs = sc;
+						wctls[i].conn.cs = s_c;
 						pthread_mutex_unlock(&wctls[i].opts.mutex);
 					}
 				}
@@ -203,6 +182,28 @@ int Worker_ScheduleRun(int ss) {
 	return 0;
 }
 
+void Worker_Delete(int i) {
+	wctls[i].opts.flag = WORKER_DETACHING;
+}
+
+
+void Worker_Destroy() {
+	int i = 0, clean = 0;
+	for (i = 0; i < conf_para.MaxClient; ++i) {
+		if (wctls[i].opts.flags != WORKER_DETACHED) {
+			Worker_Delete(i);
+		}
+	}
+	while (!clean) {
+		clean = 1;
+		for (i = 0; i < conf_para.MaxClient; ++i) {
+			if (wctls[i].opts.flag = WORKER_RUNNING || wctls[i].opts.flag == IDEL)
+				clean = 0;
+		}
+		if (!clean)
+			sleep(1);
+	}
+}
 
 int Worker_ScheduleStop() {
 	SCHEDULESTATUS = STATUS_STOP;
