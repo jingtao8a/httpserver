@@ -8,6 +8,15 @@
 #ifndef DATATYPE_H_
 #define DATATYPE_H_
 #include <pthread.h>
+#include <time.h>
+
+enum{
+	WORKER_INITED,//initialized
+	WORKER_RUNNING,//running
+	WORKER_DETACHING,//unloading
+	WORKER_DETACHED;//unloaded
+	WORKER_IDEL//free
+};
 
 struct conf_opts{
 	char CGIRoot[128];  //CGI routine
@@ -23,6 +32,56 @@ struct conf_opts{
 extern struct worker_conn;
 extern struct worker_opts;
 extern struct worker_ctl;
+extern struct conn_request;
+extern struct conn_response;
+extern struct vec;
+extern struct headers;
+
+struct vec{
+	char *ptr;
+	int len;
+	SHTTPD_METHOD_TYPE type;
+};
+
+struct headers{
+	union variant cl;
+	union variant ct;
+	union variant connection;
+	union variant ims;
+	union variant user;
+	union variant auth;
+	union variant useragent;
+	union variant referer;
+	union variant range;
+	union variant cookie;
+	union variant range;
+	union variant status;
+	union variant transenc;
+};
+
+struct conn_response{
+	struct vec res;
+	time_t birth_time;
+	time_t expire_time;
+	int status;
+	int cl;
+	int fd;
+	struct stat fsate;
+	struct worker_conn *conn;
+};
+
+struct conn_request{
+	struct vec req;
+	char* head;
+	char* uri;
+	char rpath[URI_MAX];
+	//HTTP VERSION
+	unsigned long major;
+	unsigned long minor;
+	struct headers ch;
+	struct worker_conn* conn;
+	int err;
+};
 
 struct worker_conn {
 #define K 1024
@@ -46,4 +105,7 @@ struct worker_ctl{
 	struct worker_opts opts;
 	struct worker_conn conn;
 }
+
+
+
 #endif
