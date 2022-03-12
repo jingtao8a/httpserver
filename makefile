@@ -1,7 +1,10 @@
 CC = gcc
 INCLUDE = -I ./
 TARGET = server
-OBJ = fileparse.o cmdparse.o shttpd.o shttp_request.o shttp_error.o shttp_uri.o
+OBJ = fileparse.o cmdparse.o shttpd.o \
+	  shttpd_request.o shttpd_error.o shttpd_uri.o \
+	  shttpd_mine.o shttp_cgi.o shttpd_method.o \
+	  shttpd_worker.o
 GDB = -g
 .PHONY : all clean realclean
 
@@ -19,13 +22,25 @@ fileparse.o : fileparse.c
 cmdparse.o : cmdparse.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
-shttp_request.o : shttp_request.c
+shttpd_request.o : shttpd_request.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
-shttp_error.o : shttp_error.c
+shttpd_error.o : shttpd_error.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
-shttp_uri.o : shttp_uri.c
+shttpd_uri.o : shttpd_uri.c
+	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
+
+shttpd_mine.o : shttpd_mine.c
+	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
+
+shttpd_cgi.o : shttp_cgi.c
+	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
+
+shttpd_method.o : shttp_method.c
+	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
+
+shttpd_worker.o : shttp_worker.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
 clean:

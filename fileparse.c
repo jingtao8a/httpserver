@@ -12,7 +12,7 @@
 #include "datatype.h"
 
 extern struct conf_opts conf_para;
-
+//heello
 void Para_FileParse(const char* file) {
 #define LINELENGTH 256
 	char line[LINELENGTH];

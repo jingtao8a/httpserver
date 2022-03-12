@@ -14,7 +14,7 @@ enum{
 	WORKER_INITED,//initialized
 	WORKER_RUNNING,//running
 	WORKER_DETACHING,//unloading
-	WORKER_DETACHED;//unloaded
+	WORKER_DETACHED,//unloaded
 	WORKER_IDEL//free
 };
 
@@ -29,15 +29,16 @@ struct conf_opts{
 	int InitClient;	//init thread num
 };
 
-extern struct vec;
-extern struct http_header;
-extern union variant;
-extern struct headers;
-extern struct worker_conn;
-extern struct worker_opts;
-extern struct worker_ctl;
-extern struct conn_request;
-extern struct conn_response;
+struct vec;
+struct http_header;
+union variant;
+struct headers;
+struct worker_conn;
+struct worker_opts;
+struct worker_ctl;
+struct conn_request;
+struct conn_response;
+
 typedef enum SHTTPD_METHOD_TYPE{
 	METHOD_GET, //GET
 	METHOD_POST,//POST
@@ -47,12 +48,6 @@ typedef enum SHTTPD_METHOD_TYPE{
 	METHOD_CGI,//CGI
 	METHOD_NOTSUPPORT
 }SHTTPD_METHOD_TYPE;
-
-
-typedef struct shttpd_method {
-	SHTTPD_METHOD type;
-	int name_index;
-}shttpd_method;
 
 struct vec{
 	char *ptr;
@@ -79,7 +74,7 @@ union variant{
 	void (*v_func)(void);
 	void* v_void;
 	struct vec v_vec;
-}
+};
 struct headers{
 	union variant cl;
 	union variant ct;

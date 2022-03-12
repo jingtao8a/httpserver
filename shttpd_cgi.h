@@ -8,5 +8,7 @@
 #ifndef SHTTPD_CGI_H
 #define SHTTPD_CGI_H
 
+#include "datatype.h"
+int cgiHandler(struct worker_ctl* wctl) {
 
 #endif
