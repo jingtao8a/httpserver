@@ -9,6 +9,6 @@
 #define SHTTPD_ERROR_H
 #include "datatype.h"
 
-int GenerateErrorMine(struct worker_ctl* wctl) {
+int my_GenerateErrorMine(struct worker_ctl* wctl);
 
 #endif

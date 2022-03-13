@@ -9,6 +9,6 @@
 #define SHTTPD_MINE_H
 #include "datatype.h"
 
-struct mine_type* Mine_Type(char* uri, int len, struct worker_ctl* wctl) {
+struct mine_type* Mine_Type(char* uri, int len, struct worker_ctl* wctl);
 
 #endif

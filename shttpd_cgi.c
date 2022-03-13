@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "datatype.h"
 #define CGISTR "/cgi-bin/"
 #define ARGNUM 16
@@ -20,7 +21,7 @@ static int GenerateDirFile(struct worker_ctl* wctl) {
 	char *arg[ARGNUM];
 	int num = 0;
 	char *rpath = wctl->conn.con_req.rpath;
-	stat *fs = &wctl->conn.con_res.fstate;
+	struct stat *fs = &wctl->conn.con_res.fstate;
 	//open dir;
 	DIR* dir = opendir(rpath);
 	if (dir == NULL) {

@@ -5,6 +5,11 @@
 	> Created Time: 2022年03月10日 星期四 20时43分32秒
  ************************************************************************/
 
-#include<iostream>
-using namespace std;
+#ifndef SHTTPD_WORKER_H
+#define SHTTPD_WORKER_H
+
+int Worker_ScheduleRun(int ss);
+int Worker_ScheduleStop();
+
+#endif
 

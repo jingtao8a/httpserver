@@ -5,8 +5,9 @@
 	> Created Time: 2022年03月11日 星期五 20时47分23秒
  ************************************************************************/
 
-#include<stdio.h>
-
+#include <stdio.h>
+#include <string.h>
+#include "datatype.h"
 enum{
     MINET_HTML,    MINET_HTM,    MINET_TXT,    MINET_CSS,    MINET_ICO,    MINET_GIF,    MINET_JPG,    MINET_JPEG,
     MINET_PNG,    MINET_SVG,    MINET_TORRENT,    MINET_WAV,    MINET_MP3,    MINET_MID,    MINET_M3U,    MINET_RAM,
@@ -16,7 +17,7 @@ enum{
 };
 
 
-struct mine_type builtin_mime_types[] = 
+struct mine_type builtin_mine_types[] = 
 {
     {"html",    MINET_HTML,    4,    "text/html"            },
     {"htm",        MINET_HTM,    3,    "text/html"            },
@@ -63,7 +64,7 @@ struct mine_type* Mine_Type(char* uri, int len, struct worker_ctl* wctl) {
 	int found = 0;
 	ext++;
 	printf("uri:%s, len:%d,ext is %s\n", uri, len, ext);
-	for (mine = builtin_mine_types; mine->extension != NUL; ++mine) {
+	for (mine = builtin_mine_types; mine->extension != NULL; ++mine) {
 		if (!strncmp(mine->extension, ext, mine->ext_len)) {
 			found = 1;
 			printf("found it, ext is %s\n", mine->extension);
@@ -71,7 +72,7 @@ struct mine_type* Mine_Type(char* uri, int len, struct worker_ctl* wctl) {
 		}
 	}
 	if (!found) {
-		mine = builtin_mime_types + 2;
+		mine = builtin_mine_types + 2;
 	}
 	return mine;
 }

@@ -10,7 +10,7 @@
 
 static int uri_decode(char* src, int src_len, char* dst, int dst_len) {
 	int i, j, a, b;
-#define HEXTOI(x)	(isdigit(x) ? x - '0' : x - 'A' + 10);
+#define HEXTOI(x)	(isdigit(x) ? x - '0' : x - 'A' + 10)
 	for (i = j = 0; i < src_len && j < dst_len - 1; ++i, ++j) {
 		switch(src[i]) {
 			case '%':
@@ -35,7 +35,7 @@ static int uri_decode(char* src, int src_len, char* dst, int dst_len) {
 
 static void remove_double_dots(char* s) {
 	char *p = s;
-	while (s != '\0') {
+	while (*s != '\0') {
 		*p = *s;
 		p++; s++;
 		if (*(s - 1) == '/' || *(s - 1) == '\\') {

@@ -9,6 +9,6 @@
 #define SHTTPD_METHOD_H
 #include "datatype.h"
 
-void Method_Do(struct worker_ctl* wctl);
+void my_Method_Do(struct worker_ctl* wctl);
 
 #endif

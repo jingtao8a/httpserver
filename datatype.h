@@ -9,6 +9,20 @@
 #define DATATYPE_H_
 #include <pthread.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stddef.h>
+#include <stdio.h>
+
+#define _D
+
+
+#ifdef _D
+#define DBG(fmt, args...) printf(fmt, ##args);
+#else 
+#define DBG(fmt, args...) 
+#endif
 
 enum{
 	WORKER_INITED,//initialized
@@ -69,36 +83,35 @@ struct http_header{
 union variant{
 	char* v_str;
 	int v_int;
-	long v_big_int;
+	unsigned long v_big_int;
 	time_t v_time;
 	void (*v_func)(void);
 	void* v_void;
 	struct vec v_vec;
 };
 struct headers{
-	union variant cl;
-	union variant ct;
-	union variant connection;
-	union variant ims;
-	union variant user;
-	union variant auth;
-	union variant useragent;
-	union variant referer;
-	union variant range;
-	union variant cookie;
-	union variant range;
-	union variant status;
-	union variant transenc;
+	union variant cl; //content_length
+	union variant ct; //content type
+	union variant connection;//connect status
+	union variant ims;//last modify time
+	union variant location;//user name
+	union variant auth;//authority
+	union variant useragent;//user agent
+	union variant referer;//reference
+	union variant cookie;//cookie
+	union variant range;//rnage
+	union variant status;//status
+	union variant transenc;//code type
 };
 
 struct conn_response{
 	struct vec res;
 	time_t birth_time;
 	time_t expire_time;
-	int status;//response code
-	int cl;//response length
-	int fd;
-	struct stat fsate;
+	int status;//error_code
+	unsigned long cl;//content length
+	int fd;//file descriptor
+	struct stat fstate;
 	struct worker_conn *conn;
 };
 #define URI_MAX 16384
@@ -107,7 +120,7 @@ struct conn_request{
 	char* head;//request head
 	char* uri;//request uri
 	char rpath[URI_MAX];//request file routine
-	int method;//request type
+	SHTTPD_METHOD_TYPE method;//request type
 	//HTTP VERSION
 	unsigned long major;
 	unsigned long minor;
@@ -120,12 +133,12 @@ struct worker_conn {
 #define K 1024
 	char dreq[16 * K];
 	char dres[16 * K];
-	int cs;
+	int cs;//clietn sockfd
 	int to;//timeout
 	struct conn_response con_res;
 	struct conn_request con_req;
 	struct worker_ctl* work;
-}
+};
 
 struct worker_opts{
 	pthread_t th;
@@ -137,13 +150,13 @@ struct worker_opts{
 struct worker_ctl{
 	struct worker_opts opts;
 	struct worker_conn conn;
-}
+};
 
 struct mine_type{
 	char* extension;
 	int type;
 	int ext_len;
-	char* mime_type;
+	char* mine_type;
 };
 
 

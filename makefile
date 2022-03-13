@@ -3,7 +3,7 @@ INCLUDE = -I ./
 TARGET = server
 OBJ = fileparse.o cmdparse.o shttpd.o \
 	  shttpd_request.o shttpd_error.o shttpd_uri.o \
-	  shttpd_mine.o shttp_cgi.o shttpd_method.o \
+	  shttpd_mine.o  shttpd_method.o \
 	  shttpd_worker.o
 GDB = -g
 .PHONY : all clean realclean
@@ -11,7 +11,7 @@ GDB = -g
 all : $(TARGET) clean
 
 $(TARGET) : $(OBJ)
-	$(CC) -o $(TARGET) $(OBJ) $(GDB)
+	$(CC) -o $(TARGET) $(OBJ) $(GDB) -lpthread
 
 shttpd.o : shttpd.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB) 
@@ -34,13 +34,13 @@ shttpd_uri.o : shttpd_uri.c
 shttpd_mine.o : shttpd_mine.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
-shttpd_cgi.o : shttp_cgi.c
+shttpd_cgi.o : shttpd_cgi.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
-shttpd_method.o : shttp_method.c
+shttpd_method.o : shttpd_method.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
-shttpd_worker.o : shttp_worker.c
+shttpd_worker.o : shttpd_worker.c
 	$(CC) -o $@ -c $< $(INCLUDE) $(GDB)
 
 clean:

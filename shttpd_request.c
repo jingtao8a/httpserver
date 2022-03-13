@@ -5,10 +5,16 @@
 	> Created Time: 2022年03月11日 星期五 15时11分14秒
  ************************************************************************/
 
-#include<stdio.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
 #include "datatype.h"
-#include "shttpd_error.c"
-#include "shttpd_method.c"
+#include "shttpd_error.h"
+#include "shttpd_method.h"
 extern struct conf_opts conf_para;
 
 struct vec _shttpd_methods[] = {
@@ -16,23 +22,23 @@ struct vec _shttpd_methods[] = {
 	{"POST", 4, METHOD_POST},
 	{"PUT", 3, METHOD_PUT},
 	{"DELETE", 6, METHOD_DELETE},
-	{"HEAD", 4, METHOD_HEAD}
+	{"HEAD", 4, METHOD_HEAD},
 	{NULL, 0, 0}
 };
 
 static struct http_header http_headers[] = {
-	{16, HDR_INT, OFFSET(cl), "Content-Length:"},
+	{16, HDR_INT, OFFSET(cl), "Content-Length: "},
 	{14, HDR_STRING, OFFSET(ct), "Content-Type:"},
-	{12, HDR_STRING, OFFSET(useragent), "User-Agent:"},
-	{19, HDR_DATE, OFFSET(ims), "If-Modified-Since:"},
-	{15, HDR_STRING, OFFSET(auth), "Authorization:"},
-	{9, HDR_STRING, OFFSET(referer), "Referer:"},
+	{12, HDR_STRING, OFFSET(useragent), "User-Agent: "},
+	{19, HDR_DATE, OFFSET(ims), "If-Modified-Since: "},
+	{15, HDR_STRING, OFFSET(auth), "Authorization: "},
+	{9, HDR_STRING, OFFSET(referer), "Referer: "},
 	{8, HDR_STRING, OFFSET(cookie), "Cookie:"},
-	{10, HDR_STRING, OFFSET(location), "Location"},
-	{8, HDR_INT, OFFSET(status), "Status:"},
-	{7, HDR_STRING, OFFSET(range), "Range:"},
-	{12, HDR_STRING, OFFSET(connection), "Connection:"},
-	{19, HDR_STRING, OFFSET(transenc), "Transfer-Encoding:"},
+	{10, HDR_STRING, OFFSET(location), "Location: "},
+	{8, HDR_INT, OFFSET(status), "Status: "},
+	{7, HDR_STRING, OFFSET(range), "Range: "},
+	{12, HDR_STRING, OFFSET(connection), "Connection: "},
+	{19, HDR_STRING, OFFSET(transenc), "Transfer-Encoding: "},
 	{0, HDR_INT, 0, NULL}
 };
 
@@ -44,7 +50,7 @@ static int montoi(char* s) {
 						 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 	size_t i;
 	for (i = 0; i < 12; ++i ) {
-		if (!strcmp(s, ar[i])) {
+		if (!strncmp(s, ar[i], 3)) {
 			return i;
 		}
 	}
@@ -52,30 +58,29 @@ static int montoi(char* s) {
 }
 
 static time_t date_to_epoch(char* s) {
-	struct tm tm;
+	struct tm t;
 	char mon[32];
 	int sec, min, hour, mday, month, year;
-	struct tm tm;
-	memset(&tm, 0, sizeof(tm));
+	memset(&t, 0, sizeof(t));
 	sec = min = hour = mday = month = year = 0;
 	if (((sscanf(s, "%d/%3s/%d %d:%d:%d", &mday, mon, &year, &hour, &min, &sec) == 6) ||
 		(sscanf(s, "%d %3s %d %d:%d:%d", &mday, mon, &year, &hour, &min, &sec) == 6) ||
 		(sscanf(s, "%d-%3s-%d %d:%d:%d", &mday, mon, &year, &hour, &min, &sec) == 6)) &&
 		(month = montoi(mon) != -1)) {
-		tm.tm_mday = mday;
-		tm.tm_mon = month;
-		tm.tm_year = year;
-		tm.tm_hour = hour;
-		tm.tm_min = min;
-		tm.tm_sec = sec;
+		t.tm_mday = mday;
+		t.tm_mon = month;
+		t.tm_year = year;
+		t.tm_hour = hour;
+		t.tm_min = min;
+		t.tm_sec = sec;
 	}
 
-	if (tm.tm_year > 1900) {
-		tm.tm_year -= 1900;
+	if (t.tm_year > 1900) {
+		t.tm_year -= 1900;
 	} else {
-		tm.tm_year += 100;
+		t.tm_year += 100;
 	}
-	return mktime(&tm);
+	return mktime(&t);
 }
 
 
@@ -84,9 +89,10 @@ static void Request_HeaderParse(char* s, int len, struct headers* parsed) {
 	union variant *v;
 	char *p, *e = s + len;
 	while (s < e) {
-		for (p = s; p < e && *p != '\n') {
+		for (p = s; p < e && *p != '\n';) {
 			p++;
 		}
+
 		for (h = http_headers; h->len != 0; ++h) {
 			if (e - s > h->len && !strncmp(s, h->name, h->len)) {
 				break;
@@ -98,12 +104,19 @@ static void Request_HeaderParse(char* s, int len, struct headers* parsed) {
 			if (h->type == HDR_STRING) {
 				v->v_vec.ptr = s;
 				v->v_vec.len = p - s;
-				if (p[-1] == '\r' && v->v_vec.len > 0)
+				if (p[-1] == '\r' && v->v_vec.len > 0) {
 					v->v_vec.len--;
+					p[-1] = '\0';
+				}
+				*p = '\0';
+				DBG("%s : %s\n", h->name, v->v_vec.ptr);
 			} else if (h->type == HDR_INT){
 				v->v_big_int = strtoul(s, NULL, 10);
+				DBG("%s : %lu\n", h->name, v->v_big_int)
 			} else if (h->type == HDR_DATE) {
 				v->v_time = date_to_epoch(s);
+				struct tm* tmp = localtime(&v->v_time);
+				DBG("%s : %d %d %d %d %d %d\n", h->name, tmp->tm_mday, tmp->tm_mon, tmp->tm_year, tmp->tm_hour, tmp->tm_min, tmp->tm_sec)
 			}
 		}
 		s = p + 1;
@@ -112,10 +125,10 @@ static void Request_HeaderParse(char* s, int len, struct headers* parsed) {
 
 
 int Request_Parse(struct worker_ctl* wctl) {
+	DBG("\n\n\n\nREQUEST PARSE\n");
 	struct worker_conn* c = &wctl->conn;
 	struct conn_request* req = &c->con_req;
 	struct conn_response* res = &c->con_res;
-	int retval = 200;
 	char *p = req->req.ptr;
 	int len = req->req.len;
 	char *pos = NULL;
@@ -131,17 +144,18 @@ int Request_Parse(struct worker_ctl* wctl) {
 		p++;
 		len--;
 	}
-	struct vec* m = NULL
+	struct vec* m = NULL;
 	for (m = _shttpd_methods; m->ptr != NULL; m++) {
 		if (!strncmp(p, m->ptr, m->len)) {
 			req->method = m->type;
 			found = 1;
+			DBG("http_method: %s\n", m->ptr);
 			break;
 		}
 	}
 	if (found == 0) {
-		retval = 400;
-		return retval;
+		DBG("http method wrong\n");
+		return 400;//bad request
 	}
 
 	//find the http uri
@@ -158,17 +172,23 @@ int Request_Parse(struct worker_ctl* wctl) {
 	}
 	*pos = '\0';
 	req->uri = (char*)p;
-	snprintf(req->rpath, URI_MAX, "%s/%s", conf_para.DocumentRoot, req->uri);
-	req->fd = open(req->rpath, O_RDONLY);
+	DBG("uri: %s\n", req->uri);
+	if (!strcmp(req->uri, "/")) {
+		snprintf(req->rpath, URI_MAX, "%s%s", conf_para.DocumentRoot, conf_para.DefaultFile);
+	} else {
+		snprintf(req->rpath, URI_MAX, "%s%s", conf_para.DocumentRoot, req->uri);
+	}
+	DBG("rpath: %s\n", req->rpath);
+	res->fd = open(req->rpath, O_RDONLY);
 	if (res->fd != -1) {
 		fstat(res->fd, &res->fstate);
 		if (S_ISDIR(res->fstate.st_mode)) {
-			retval = 403;
-			return retval;
+			DBG("request forbidden\n")
+			return 403;//forbidden
 		}
 	} else {
-		retval = 404;
-		return retval;
+		DBG("file not found\n");
+		return 404;//not found
 	}
 
 	pos++;
@@ -179,10 +199,11 @@ int Request_Parse(struct worker_ctl* wctl) {
 	}
 	p = pos;
 	sscanf(p, "HTTP/%lu.%lu", &req->major, &req->minor);
-	if (!((req->major == 0 && req->minor == 9) || (req->major == 1 & req->req->minor == 0)||
+	DBG("http version %s\n", p);
+	if (!((req->major == 0 && req->minor == 9) || (req->major == 1 & req->minor == 0)||
 		(req->major == 1 && req->minor == 1))) {
-		retval = 505;
-		return retval;
+		DBG("http version not support\n");
+		return 505;//version not support
 	}
 	while (*pos != '\0') {
 		pos++;
@@ -193,47 +214,51 @@ int Request_Parse(struct worker_ctl* wctl) {
 		len--;
 	}
 	p = pos;
+	DBG("HEADER PARSE..............\n");
 	Request_HeaderParse(p, len, &req->ch);
-	return retval;
+	DBG("HEADER_PARSE END..........\n");
+	return 200;//ok
 }
 
 int Request_Handle(struct worker_ctl* wctl) {
+	DBG("\n\n\nREQUEST HANDLE\n");
 	int err = wctl->conn.con_req.err;
-	int cs = wctl->conn.cs;
+	int cs = wctl->conn.cs;//client_sockfd
 	char* ptr = wctl->conn.con_res.res.ptr;
-	int n;
+	int fd = wctl->conn.con_res.fd;
+	int n, cl;
 	switch(err) {
-		case 200;
-			Method_Do(wctl);
-			int fd = wctl->conn.con_res.fd;
+		case 200:
+			DBG("200  ok\n");
+			my_Method_Do(wctl);
 			cl = wctl->conn.con_res.cl;
-			len = strlen(wctl->conn.con_res.res.ptr);
-			n = write(cs, ptr, len);
-			printf("echo header:%d, write to client %d bytes, status:%d\n", ptr, n, wctl->conn.con_res.status);
+			n = write(cs, ptr, strlen(ptr));
+			DBG("%s", ptr);
+			DBG("write %d bytes\n\n", n)
 			if (fd != -1) {
 				lseek(fd, 0, SEEK_SET);
-				len = sizeof(wctl->conn.dres);
-				printf("response len:%d, content length:%d\n", len, wctl->conn.con_res.cl);
+				
 				for (n = 0; cl > 0; cl -= n) {
-					n = read(fd, ptr, len > cl ? cl : sizeof(wctl->conn.dres));
-					printf("read %d bytes,", n);
+					memset(ptr, 0, sizeof(wctl->conn.dres));
+					n = read(fd, ptr, sizeof(wctl->conn.dres) > cl ? cl : sizeof(wctl->conn.dres));
+					DBG("%s",ptr);
+					DBG("read %d bytes\n", n)
 					if (n > 0) {
 						n = write(cs, ptr, n);
-						printf("write %d bytes\n", n);
+						DBG("write %d bytes\n\n", n);
 					}
 				}
 				close(fd);
 				wctl->conn.con_res.fd = -1;
 			}
 			break;
-		case 400:
-		case 403:
-		case 404:
-		case 505:
-			GenerateErrorMine(wctl);
-			cl = wctl->conn.con_res.cl;
-			len = strlen(wctl->conn.con_res.res.ptr);
-			n = write(cs, ptr, len);
+		case 400://bad request
+		case 403://forbidden
+		case 404://not found
+		case 505://version not support;
+			my_GenerateErrorMine(wctl);
+			n = write(cs, ptr, strlen(ptr));//send to client
+			DBG("send error information to client successfully\n");
 			break;
 	}
 	return 0;

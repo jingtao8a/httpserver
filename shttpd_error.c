@@ -5,7 +5,9 @@
 	> Created Time: 2022年03月11日 星期五 17时35分43秒
  ************************************************************************/
 
-#include<stdio.h>
+#include <stdio.h>
+#include <string.h>
+#include "datatype.h"
 
 enum
 {
@@ -18,60 +20,68 @@ enum
 struct error_mine
 {
     int error_code;//错误代码
-    char *content;//错误信息
     char *msg;//含义
+    char *content;//错误信息
     int status;//状态
 };
 
 //错误信息数组
 static struct error_mine _error_http[]=
 {
-    {ERROR301, "Error: 301", "永久移动",         301},
-    {ERROR302, "Error: 302", "创建",             302},
-    {ERROR303, "Error: 303", "观察别的部分",     303},
-    {ERROR304, "Error: 304", "只读",             304},
-    {ERROR305, "Error: 305", "用户代理",         305},
-    {ERROR307, "Error: 307", "临时重发",         307},    
-    {ERROR400, "Error: 400", "坏请求",             400},
-    {ERROR401, "Error: 401", "未授权的",         401},
-    {ERROR402, "Error: 402", "必要的支付",         402},
-    {ERROR403, "Error: 403", "禁用",             403},
-    {ERROR404, "Error: 404", "没找到",             404},
-    {ERROR405, "Error: 405", "不允许的方式",     405},
-    {ERROR406, "Error: 406", "不接受",             406},
-    {ERROR407, "Error: 407", "需要代理验证",     407},
-    {ERROR408, "Error: 408", "请求超时",         408},
-    {ERROR409, "Error: 409", "冲突",             409},
-    {ERROR410, "Error: 410", "停止",             410},
-    {ERROR411, "Error: 411", "需要的长度",         411},
-    {ERROR412, "Error: 412", "预处理失败",         412},
-    {ERROR413, "Error: 413", "请求实体太大",     413},
-    {ERROR414, "Error: 414", "请求-URI太大",     414},
-    {ERROR415, "Error: 415", "不支持的媒体类型",415},
-    {ERROR416, "Error: 416", "请求的范围不满足",416},
-    {ERROR417, "Error: 417", "期望失败",         417},
-    {ERROR500, "Error: 500", "服务器内部错误", 500},
-    {ERROR501, "Error: 501", "不能实现",         501},
-    {ERROR502, "Error: 502", "坏网关",             502},
-    {ERROR503, "Error: 503", "服务不能实现",     503},
-    {ERROR504, "Error: 504", "网关超时",         504},
-    {ERROR505, "Error: 505", "HTTP版本不支持", 505}
+    {ERROR301, "Error: 301", "MOVE FOREVER",         301},
+    {ERROR302, "Error: 302", "CREATE",             302},
+    {ERROR303, "Error: 303", "OBSERVER OTHER PARTS",     303},
+    {ERROR304, "Error: 304", "READ ONLY",             304},
+    {ERROR305, "Error: 305", "USER AGENT",         305},
+    {ERROR307, "Error: 307", "TEMPORARY REDICT",         307},    
+    {ERROR400, "Error: 400", "BAD REQUEST",             400},
+    {ERROR401, "Error: 401", "NOT AUTHORIZE",         401},
+    {ERROR402, "Error: 402", "NECESSARY PAY",         402},
+    {ERROR403, "Error: 403", "FORBIDDEN",             403},
+    {ERROR404, "Error: 404", "NOT FOUND",             404},
+    {ERROR405, "Error: 405", "NOT PERMISSION",     405},
+    {ERROR406, "Error: 406", "NOT RECEIVED",             406},
+    {ERROR407, "Error: 407", "NEED AGENT TO AUTHENTICATE",     407},
+    {ERROR408, "Error: 408", "REQUEST TIMEOUT",         408},
+    {ERROR409, "Error: 409", "CONFICT",             409},
+    {ERROR410, "Error: 410", "STOP",             410},
+    {ERROR411, "Error: 411", "REQUIRED LENGTH",         411},
+    {ERROR412, "Error: 412", "PRETREAMENT FAIL",         412},
+    {ERROR413, "Error: 413", "THE REQUESTED ENTITY IS TOO LARGE",     413},
+    {ERROR414, "Error: 414", "THE REQUESTED URI IS TOO LARGE",     414},
+    {ERROR415, "Error: 415", "UNSUPPORTED MEDIA TYPE",415},
+    {ERROR416, "Error: 416", "THE REQUESTED SCOPE IS NOT SATISFIED",416},
+    {ERROR417, "Error: 417", "EXPECT FAIL",         417},
+    {ERROR500, "Error: 500", "INTERNAL SERVER ERROR", 500},
+    {ERROR501, "Error: 501", "CAN'T REALIZE",         501},
+    {ERROR502, "Error: 502", "BAD GATEWAT",             502},
+    {ERROR503, "Error: 503", "SERVICE CANNOT BE REALIZED",     503},
+    {ERROR504, "Error: 504", "GATEWAY TIMEOUT",         504},
+    {ERROR505, "Error: 505", "HTTP VERSION NOT SUPPORTED", 505}
 };
 
-int GenerateErrorMine(struct worker_ctl* wctl) {
+int my_GenerateErrorMine(struct worker_ctl* wctl) {
 	struct error_mine* err = NULL;
 	int i = 0;
-	for (err = _error_http; error->status != wctl->conn.con_res.err; i++);
-	if (err->status != wctl->conn.con_res.err) {
+	for (err = _error_http; err->status != wctl->conn.con_req.err; err++);
+	if (err->status != wctl->conn.con_req.err) {
 		err = &_error_http[0];
 	}
-	snprintf(wctl->conn.dres, sizeof(wctl->conn.dres), "HTTP/%lu.%lu %d %s\r\nContent-Type:%s\r\n\
-			Content-Length:%d\r\n\r\n%s", \
-			wctl->conn.con_req.major, wctl->conn.con_req.minor,\
-			err->status, err->msg, "text/plain", strlen(err->content), err->content);
+    memset(wctl->conn.dres, 0, sizeof(wctl->conn.dres));
+	snprintf(wctl->conn.dres, sizeof(wctl->conn.dres),\
+    "HTTP/%lu.%lu %d %s\r\n\
+    Content-Type:%s\r\n\
+    Content-Length:%d\r\n\
+    \r\n\
+    %s", \
+    wctl->conn.con_req.major, wctl->conn.con_req.minor, err->status, err->msg, \
+    "text/plain", \
+    (int)strlen(err->content),\
+    err->content);
+    
 	wctl->conn.con_res.cl = strlen(err->content);
 	wctl->conn.con_res.fd = -1;
-	wctl->conn.con_res.status = err->error_code;
+	wctl->conn.con_res.status = err->status;
 	return 0;
 }
 
